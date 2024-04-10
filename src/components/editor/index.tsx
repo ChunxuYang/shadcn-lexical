@@ -2,6 +2,7 @@
 
 import React from "react";
 
+import InitialEditorState from "@/lib/initial-editor-state.json";
 import { CodeHighlightNode, CodeNode } from "@lexical/code";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { ListItemNode, ListNode } from "@lexical/list";
@@ -25,6 +26,12 @@ const Editor: React.FC = () => {
   const config: InitialConfigType = {
     namespace: "lexical-editor",
 
+    theme: {
+      text: {
+        underline: "underline",
+      },
+    },
+
     nodes: [
       HeadingNode,
       ListNode,
@@ -37,6 +44,8 @@ const Editor: React.FC = () => {
       LinkNode,
     ],
 
+    editorState: JSON.stringify(InitialEditorState),
+
     onError: (error) => {
       console.error(error);
     },
@@ -44,26 +53,30 @@ const Editor: React.FC = () => {
 
   return (
     <LexicalComposer initialConfig={config}>
-      <div className={`mx-auto relative prose dark:prose-invert`}>
-        <RichTextPlugin
-          contentEditable={
-            <ContentEditable className="focus:outline-none w-full mt-10 p-8 pt-12 h-[500px] overflow-auto relative rounded-lg shadow border" />
-          }
-          placeholder={
-            <p className="text-muted-foreground absolute top-0 p-8 pt-12 w-full pointer-events-none">
-              Enter some text...
-            </p>
-          }
-          ErrorBoundary={LexicalErrorBoundary}
-        />
-        <HistoryPlugin />
+      <div
+        className={`mx-auto relative flex flex-col mt-10 border shadow rounded-lg prose dark:prose-invert`}
+      >
+        <ToolbarPlugin />
+
+        <div className="relative">
+          <RichTextPlugin
+            contentEditable={
+              <ContentEditable className="focus:outline-none w-full px-8 py-4 h-[500px] overflow-auto relative" />
+            }
+            placeholder={
+              <p className="text-muted-foreground absolute top-0 px-8 py-4 w-full pointer-events-none">
+                Enter some text...
+              </p>
+            }
+            ErrorBoundary={LexicalErrorBoundary}
+          />
+          <HistoryPlugin />
+        </div>
         {/* <AutoFocusPlugin /> */}
         <ListPlugin />
         <LinkPlugin />
 
         <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
-
-        <ToolbarPlugin />
       </div>
     </LexicalComposer>
   );

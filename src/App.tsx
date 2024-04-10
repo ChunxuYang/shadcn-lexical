@@ -1,10 +1,8 @@
-import "./App.css";
-
 import Editor from "@/components/editor";
 
 function App() {
   return (
-    <main className="w-screen h-screen">
+    <main className="w-screen h-screen p-8">
       <Editor />
     </main>
   );
