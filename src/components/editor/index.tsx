@@ -35,6 +35,7 @@ const Editor: React.FC = () => {
     nodes: [
       HeadingNode,
       ListNode,
+
       ListItemNode,
       QuoteNode,
       CodeNode,

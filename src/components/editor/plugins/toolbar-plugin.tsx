@@ -1,21 +1,45 @@
 import {
-    $getSelection, $isRangeSelection, CAN_REDO_COMMAND, CAN_UNDO_COMMAND, COMMAND_PRIORITY_CRITICAL,
-    FORMAT_TEXT_COMMAND, REDO_COMMAND, SELECTION_CHANGE_COMMAND, UNDO_COMMAND
-} from 'lexical';
-import { useCallback, useEffect, useState } from 'react';
+  $getSelection,
+  $isRangeSelection,
+  $isRootOrShadowRoot,
+  CAN_REDO_COMMAND,
+  CAN_UNDO_COMMAND,
+  COMMAND_PRIORITY_CRITICAL,
+  FORMAT_TEXT_COMMAND,
+  REDO_COMMAND,
+  SELECTION_CHANGE_COMMAND,
+  UNDO_COMMAND,
+} from "lexical";
+import { useCallback, useEffect, useState } from "react";
 
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Toggle } from '@/components/ui/toggle';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { mergeRegister } from '@lexical/utils';
-import { FontBoldIcon, FontItalicIcon, ReloadIcon, UnderlineIcon } from '@radix-ui/react-icons';
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Toggle } from "@/components/ui/toggle";
+import { $isListNode, ListNode } from "@lexical/list";
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import { $isHeadingNode } from "@lexical/rich-text";
+import {
+  $findMatchingParent,
+  $getNearestNodeOfType,
+  mergeRegister,
+} from "@lexical/utils";
+import {
+  FontBoldIcon,
+  FontItalicIcon,
+  ReloadIcon,
+  UnderlineIcon,
+} from "@radix-ui/react-icons";
+
+import BlockTypeDropdown from "./components/block-type-dropdown";
+import { blockTypeToBlockName } from "./components/block-types";
 
 export default function ToolbarPlugin() {
   const [editor] = useLexicalComposerContext();
   const [isBold, setIsBold] = useState<boolean>(false);
   const [isItalic, setIsItalic] = useState<boolean>(false);
   const [isUnderline, setIsUnderline] = useState<boolean>(false);
+  const [blockType, setBlockType] =
+    useState<keyof typeof blockTypeToBlockName>("paragraph");
 
   const [canUndo, setCanUndo] = useState<boolean>(false);
   const [canRedo, setCanRedo] = useState<boolean>(false);
@@ -26,8 +50,44 @@ export default function ToolbarPlugin() {
       setIsBold(selection.hasFormat("bold"));
       setIsItalic(selection.hasFormat("italic"));
       setIsUnderline(selection.hasFormat("underline"));
+
+      const anchorNode = selection.anchor.getNode();
+
+      let element =
+        anchorNode.getKey() === "root"
+          ? anchorNode
+          : $findMatchingParent(anchorNode, (e) => {
+              const parent = e.getParent();
+              return parent !== null && $isRootOrShadowRoot(parent);
+            });
+
+      if (element === null) {
+        element = anchorNode.getTopLevelElementOrThrow();
+      }
+
+      const elementDOM = editor.getElementByKey(element.getKey());
+
+      if (elementDOM !== null) {
+        if ($isListNode(element)) {
+          const parentList = $getNearestNodeOfType<ListNode>(
+            anchorNode,
+            ListNode
+          );
+          const type = parentList
+            ? parentList.getListType()
+            : element.getListType();
+          setBlockType(type);
+        } else {
+          const type = $isHeadingNode(element)
+            ? element.getTag()
+            : element.getType();
+          if (type in blockTypeToBlockName) {
+            setBlockType(type as keyof typeof blockTypeToBlockName);
+          }
+        }
+      }
     }
-  }, []);
+  }, [editor]);
 
   useEffect(() => {
     return mergeRegister(
@@ -89,6 +149,10 @@ export default function ToolbarPlugin() {
         >
           <ReloadIcon />
         </Button>
+
+        <Separator orientation="vertical" className="h-auto my-1" />
+
+        <BlockTypeDropdown blockType={blockType} />
 
         <Separator orientation="vertical" className="h-auto my-1" />
 
